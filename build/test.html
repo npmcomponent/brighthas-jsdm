@@ -1,0 +1,38 @@
+<script src="build.js"></script>
+<script>
+
+        var Domain = require("jsdm");
+alert(Domain);
+        var ss = Domain();
+        ss.bindAgg(
+        {
+        init:function(data){return data;},
+        name:"M",
+        proto:{
+            changeName:function(args,my){
+                my.publish("changename",{name:"leo"});
+            }
+        }}).
+        bindCommandHandle({name:"comd",commandHandle:function(cmd,my){
+            var M = my.getAgg("M");
+            var m  =   new M();
+            m.changeName();
+            }
+        }).
+        bindService({name:"S1",service:function(args,my){
+            alert(args);
+            }
+        }).
+        listen("changename",function(event,my){
+            alert(my);
+        });
+        
+        ss.seal();
+        
+        ss.listenOnce("changename",function(event,my){
+            alert(my);
+        });
+        
+        ss.exec("comd");
+        ss.exec("comd");
+</script>
