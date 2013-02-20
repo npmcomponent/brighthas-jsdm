@@ -1,6 +1,6 @@
 {
   "name": "jsdm",
-  "version": "0.0.1",
+  "version": "0.0.12",
   "description": "Domain development , DDD-CRS framework for node.js .",
   "main": "index.js",
   "scripts": {
@@ -15,11 +15,10 @@
     "url": "https://github.com/brighthas/crs.git"
   },
   "author": "brighthas",
-  "license": "BSD",
+  "license": "MIT",
   "readmeFilename": "README.md",
   "gitHead": "6c890cae2bd09c5870b73fc6b766d5a6d89e1d07",
   "directories": {
-    "example": "example",
     "test": "test"
   },
   "devDependencies": {},
