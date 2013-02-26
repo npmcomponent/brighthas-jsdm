@@ -14,7 +14,7 @@ switch(typeof(obj)){
     }
     else{
      for (var a in obj){
-      ret.push(a + ':' + obj2Str(obj[a]));
+      ret.push('"'+a+'"' + ':' + obj2Str(obj[a]));
      }
      return '{' + ret.join(',') + '}';
     }
