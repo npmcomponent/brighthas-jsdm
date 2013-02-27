@@ -1,13 +1,13 @@
 var domain = require("jsdm")();
 var conf = require("./domain-conf");
 
-var commandHandles = require(conf.commandHandles);
-var services = require(conf.services);
-var aggreNames = require(conf.aggres);
-var eventHandles = require(conf)
+var commandHandles = require("./"+conf.commandHandles);
+var services = require("./"+conf.services);
+var aggreNames = conf.aggres;
+var eventHandles = require("./"+conf.eventHandles)
 
 aggreNames.forEach(function(name){
-    domain.bindAgg(require(name));
+    domain.bindAgg(require("./"+name));
 });
 
 domain.bindServices(services);
@@ -18,7 +18,7 @@ for(var k in eventHandles){
     handles.forEach(function(handle){
         var args = k.split(".");
         args.push(handle);
-        domain.listen.apply(domain.listen,args);
+        domain.listen.apply(domain,args);
     })
 }
 
