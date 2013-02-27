@@ -11,6 +11,22 @@ if(!fs.existsSync(path.join(process.cwd(),"domain.js"))){
     fs.writeFileSync(path.join(process.cwd(),"domain.js"),fs.readFileSync(path.join(__dirname,"domain.js")))
 }
 
+if(fs.existsSync(path.join(process.cwd(),"domain-conf.js"))){
+    config = require(path.join(process.cwd(),"domain-conf.js"));
+}
+
+if(fs.existsSync(path.join(process.cwd(),"commandHandles.js"))){
+    handles = require(path.join(process.cwd(),"commandHandles.js"));
+}
+
+if(fs.existsSync(path.join(process.cwd(),"services.js"))){
+    services = require(path.join(process.cwd(),"services.js"));
+}
+
+if(fs.existsSync(path.join(process.cwd(),"eventHandles.js"))){
+    eventHandles = require(path.join(process.cwd(),"eventHandles.js"));
+}
+
 var uglifyconf = {mangle :false,fromString: true,output:{beautify:true},compress:{
     sequences     : false,  // join consecutive statemets with the “comma operator”
     properties    : false,  // optimize property access: a["foo"] → a.foo
@@ -33,16 +49,14 @@ var uglifyconf = {mangle :false,fromString: true,output:{beautify:true},compress
 }}
 
 
-if(fs.existsSync(path.join(process.cwd(),"domain-conf.js"))){
-    config = require(path.join(process.cwd(),"domain-conf.js"));
-}
 
 program
-  .version('0.0.1')
+  .version('0.0.17')
   .option('-c,--createCommandHandle <names>', 'create a command handle',range)
   .option('-a,--createAggreProto <names>', 'create a aggre proto',range)
   .option('-s,--createService <names>', 'create a service',range)
   .option('-e,--createEventHandle <names>','create a event handle',range)
+  .option('ls,--ls','list domain components',range)
   .parse(process.argv);
 
 function range(val) {
@@ -167,10 +181,6 @@ if(program.createCommandHandle){
     
     var names = program.createCommandHandle;
     
-    if(fs.existsSync(path.join(process.cwd(),"commandHandles.js"))){
-        handles = require(path.join(process.cwd(),"commandHandles.js"));
-    }
-    
     names.forEach(function(n){
         createCommandHandle(n);
     })
@@ -183,11 +193,7 @@ if(program.createCommandHandle){
 if(program.createService){
     
     var names = program.createService;
-    
-    if(fs.existsSync(path.join(process.cwd(),"services.js"))){
-        services = require(path.join(process.cwd(),"services.js"));
-    }
-    
+        
     names.forEach(function(n){
         createService(n);
     })
@@ -200,10 +206,6 @@ if(program.createService){
 if(program.createEventHandle){
     
     var names = program.createEventHandle;
-    
-    if(fs.existsSync(path.join(process.cwd(),"eventHandles.js"))){
-        eventHandles = require(path.join(process.cwd(),"eventHandles.js"));
-    }
     
     names.forEach(function(n){
         eventHandles[n] = eventHandles[n]?eventHandles[n]:[];
@@ -219,6 +221,24 @@ if(program.createEventHandle){
     var ast = "module.exports="+obj2str(eventHandles);
     
     fs.writeFileSync(path.join(process.cwd(),"eventHandles.js"),ast);
+}
+
+if(program.ls){
+    console.log("> Aggre:\n ------------------- \n");
+    console.log(config.aggres);
+    
+    console.log("\n\n > command handles : \n ------------------- \n");
+    handles.forEach(function(h){
+        console.log("- " + h.name+"\n");
+    })
+    console.log("\n\n > services: \n ------------------- \n");
+    services.forEach(function(s){
+        console.log("- " + s.name+"\n");
+    })
+    console.log("\n\n > event handles: \n ------------------- \n");
+    for(var k in eventHandles){
+        console.log("- " + k +"\n");
+    }
 }
 
 
