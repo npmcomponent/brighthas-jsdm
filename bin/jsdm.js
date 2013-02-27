@@ -51,7 +51,7 @@ var uglifyconf = {mangle :false,fromString: true,output:{beautify:true},compress
 
 
 program
-  .version('0.0.17')
+  .version('0.0.1')
   .option('-c,--createCommandHandle <names>', 'create a command handle',range)
   .option('-a,--createAggreProto <names>', 'create a aggre proto',range)
   .option('-s,--createService <names>', 'create a service',range)
@@ -127,6 +127,8 @@ function createAggreProto(name){
 
 
 function createCommandHandle(name){
+
+    name = name.replace(/_/g," ");
 
     if(handlesHaveName(name)){
         console.log("Already have the \""+name+"\" command handle.");
