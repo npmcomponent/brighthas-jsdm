@@ -1,6 +1,6 @@
 {
   "name": "jsdm",
-  "version": "0.0.17",
+  "version": "0.0.19",
   "description": "Domain development , DDD-CRS framework for node.js .",
   "main": "index",
   "scripts": {
