@@ -11,7 +11,8 @@
   "dependencies": {
     "gjohnson/uuid": "*",
     "component/emitter": "*",
-    "component/inherit": "*"
+    "component/inherit": "*",
+    "component/jquery": "*"
   },
   "development": {},
   "scripts": [
