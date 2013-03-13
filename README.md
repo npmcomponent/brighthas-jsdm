@@ -27,7 +27,8 @@ domain mean?
 
 step 1. define Aggre
 =====================
-    
+
+```javascript    
     // User.js
     
     module.exports = {
@@ -63,10 +64,12 @@ step 1. define Aggre
         }
         
     }
-    
+```    
 
 step 2. define command handle   
 ==============================
+
+```javascript
     
     // commandHandles.js
     
@@ -102,14 +105,15 @@ step 2. define command handle
         
     }]
 
+```
     
 step 3.  database interface
 ============================
 
+```javascript
+
     // jsdm core only need 'get' function, from database get obj data , the data is json.
-    
     // testdb.js
-  
     module.exports = {
     
         _dbs = {
@@ -138,6 +142,7 @@ step 3.  database interface
             
         }
     }
+```
 
 step 4. create domain and run
 =============================
@@ -169,4 +174,5 @@ step 4. create domain and run
     // execute result is : leo
 
 ```
+
 
