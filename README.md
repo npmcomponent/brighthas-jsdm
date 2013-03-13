@@ -37,7 +37,7 @@ domain mean?
     
     domain inside include  Aggre, EventHandle, Service and CommandHandle.
     
-    ``` domain.exec ---> command handle ---> serivce / Aggre object (generate events) ---> event handle ```
+    domain.exec ---> command handle ---> serivce / Aggre object (generate events) ---> event handle
     
     
     
