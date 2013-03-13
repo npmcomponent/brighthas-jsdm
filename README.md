@@ -155,8 +155,8 @@ step 4. create domain and run
         db = require("./testdb");
         
     domain.bindAgg(User)
-          .bindCommandHandle(commandHandles[0]).
-          .bindCommandHandle(commandHandles[1]).
+          .bindCommandHandle(commandHandles[0])
+          .bindCommandHandle(commandHandles[1])
           
         //.bindService(service)
         //.listen(eventName,handle)
