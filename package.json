@@ -1,6 +1,6 @@
 {
   "name": "jsdm",
-  "version": "0.0.24",
+  "version": "0.1.0",
   "description": "Domain development , DDD-CRS framework for node.js .",
   "main": "index",
   "scripts": {
@@ -25,9 +25,9 @@
   "devDependencies": {},
   "keywords": [
     "cqrs",
-    "ddd"
-  ],
-  "bin": {
-    "jsdm": "./bin/jsdm.js"
-  }
+    "ddd",
+    "domain",
+    "ioc",
+    "di"
+  ]
 }
