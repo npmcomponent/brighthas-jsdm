@@ -100,14 +100,16 @@ describe("Domain",function(){
         }
         ser_wrap.NAME = "testservice"
         
-        domain.register("AggreClass",user_wrap)
-              .register("repository",user_repo_wrap)
-              .register("commandHandle",ch_wrap2,ch_wrap1)
-              .register("listener",lis_wrap)
-              .register("service",ser_wrap)
-              .register("filter",function(cname,args,callback){
+        domain.register(
+                "AggreClass",user_wrap,
+                "repository",user_repo_wrap,
+                "commandHandle",[ch_wrap2,ch_wrap1],
+                "listener",lis_wrap,
+                "service",ser_wrap,
+                "filter",function(cname,args,callback){
+                  console.log(323)
                   callback();
-              })
+                })
               .seal();
         
     })

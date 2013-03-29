@@ -149,5 +149,18 @@ step 4.  register and run
    })
          
 ```
+domain.register
+================
+```javascript
+   domain.register("AggreClass",UserClass)
+         .register("repository",user_repo)
+         .register("commandHandle",handles[0],handles[1])
+         .seal();
+```
+or
+```javascript
+   domain.register("AggreClass",UserClass,"repository",user_repo,"commandHandle",handles)
+         .seal();
+```
 
 
