@@ -105,11 +105,7 @@ describe("Domain",function(){
                 "repository",user_repo_wrap,
                 "commandHandle",[ch_wrap2,ch_wrap1],
                 "listener",lis_wrap,
-                "service",ser_wrap,
-                "filter",function(cname,args,callback){
-                  console.log(323)
-                  callback();
-                })
+                "service",ser_wrap)
               .seal();
         
     })

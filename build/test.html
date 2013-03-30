@@ -1,38 +1,114 @@
 <script src="build.js"></script>
 <script>
 
-        var Domain = require("jsdm");
-alert(Domain);
-        var ss = Domain();
-        ss.bindAgg(
-        {
-        init:function(data){return data;},
-        name:"M",
-        proto:{
-            changeName:function(args,my){
-                my.publish("changename",{name:"leo"});
+        var domain = require("jsdm")();
+        
+        // define aggre class
+        function user_wrap(repos,services,publish){
+        
+            function User(name){
+                this._name = name;
             }
-        }}).
-        bindCommandHandle({name:"comd",commandHandle:function(cmd,my){
-            var M = my.getAgg("M");
-            var m  =   new M();
-            m.changeName();
+            
+            User.prototype = {
+                getName:function(){
+                   return this._name;
+                },
+                changeName:function(name){
+                    this._name = name;
+                    publish("user."+this.id+".changeName",name);
+                    publish("user.*.changeName",this.id,name);
+                }
             }
-        }).
-        bindService({name:"S1",service:function(args,my){
-            alert(args);
+            
+            return User;
+        }
+        user_wrap.NAME = "user";
+        
+        // define aggre repository
+        function user_repo_wrap(repository,User){
+        
+            repository._create = function(data,callback){
+                var user = new User(data.name);
+                callback(undefined,user);
             }
-        }).
-        listen("changename",function(event,my){
-            alert(my);
+            
+            repository._data2aggre = function(data){
+                var user = new User(data.name);
+                user.id = data.id;
+                return user;
+            }
+            
+            repository._aggre2data = function(aggre){
+                var data = {
+                    name:aggre.getName(),
+                    id:aggre.id
+                }
+                return data;
+            }
+            
+        }
+        user_repo_wrap.NAME = "user";
+        
+        // define command handle 1
+        function ch_wrap1(repos,services){
+            function handle(args,callback){
+                var repo = repos.user;
+                repo.get(args.id,function(err,user){
+                    user.changeName(args.name);
+                    callback();
+                })
+            }
+            return handle;
+        }
+        ch_wrap1.NAME = "change user name";
+        
+        // define command handle 2
+        function ch_wrap2(repos,services){
+            function handle(args,callback){
+                var repo = repos.user;
+                repo.create({name:args.name},callback)
+            }
+            return handle;
+        }
+        ch_wrap2.NAME = "create a user";
+        
+        // define a listener
+        function lis_wrap(repos,services){
+            return function(data){
+                repos.user.getData(data.id,function(d){
+                   alert( services.testservice(2,3,6) );
+                });
+            }
+        }
+        lis_wrap.NAME = "user.*.create";
+        
+        // define a service
+        function ser_wrap(repos,services){
+        
+            return function(a,b,c){
+               
+                return a+b+c;
+            }
+            
+        }
+        ser_wrap.NAME = "testservice"
+        
+        domain.register(
+                "AggreClass",user_wrap,
+                "repository",user_repo_wrap,
+                "commandHandle",[ch_wrap2,ch_wrap1],
+                "listener",lis_wrap,
+                "service",ser_wrap)
+              .seal()
+              .on("user.*.changeName",function(){
+                alert("changename!!!")
+              })
+              
+              
+        domain.exec("create a user",{name:"leo"},function(err,user){
+            domain.exec("change user name",{name:"brighthas",id:user.id},function(){})
         });
         
-        ss.seal();
         
-        ss.listenOnce("changename",function(event,my){
-            alert(my);
-        });
-        
-        ss.exec("comd");
-        ss.exec("comd");
 </script>

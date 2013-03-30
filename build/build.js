@@ -387,414 +387,265 @@ Emitter.prototype.hasListeners = function(event){
 };
 
 });
-require.register("component-inherit/index.js", function(exports, require, module){
-
-module.exports = function(a, b){
-  var fn = function(){};
-  fn.prototype = b.prototype;
-  a.prototype = new fn;
-  a.prototype.constructor = a;
-};
-});
 require.register("jsdm/index.js", function(exports, require, module){
 module.exports  =  require("./lib/Domain");
 });
-require.register("jsdm/lib/AggreProto.js", function(exports, require, module){
-module.exports  = AggreProto;
-var uuid = {};
-if(window){
-    uuid.v1 = require("uuid");
+require.register("jsdm/lib/Repository.js", function(exports, require, module){
+if(typeof window !== "undefined"){
+    uuid = require("uuid");
 }else{
-    uuid = require("node-uuid");
-}
-var Event = require("./Event");
-
-function AggreProto(data){
-	this._data = JSON.parse(JSON.stringify(data));
-	this._data.id = this._data.id ? this._data.id : uuid.v1();
-	this.constructor._cache[this.id]  =  this;
-	this._publish("create",Object.create(this._data));
+    uuid = require("node-uuid").v1;
 }
 
-AggreProto.get = function(id,callback){
-	var self = this;
-
-	if(this._cache[id]){
-		callback(this._cache[id]);
-	}else if(typeof this._cache[id] === "boolean"){
-		callback(null);
-	}else{
-		this._db.get(self.typeName,id,function(err,data){
-			if(data){
-				data.__in__ = true;
-				var o = new self(data);
-				self._cache[o.id] = o;
-				callback(o);
-			}else{
-				callback(null);
-			}
-		});
-	}
-}
-
-AggreProto.prototype = {
-
-	_service : function(){
-		this._serviceBus.exec.apply(this._serviceBus,arguments);
-	},
-	
-	_getAgg : function(AggreTypeName){
-		return this._AggreTypes[AggreTypeName];
-	},
-
-	_publish:function(eventName,data){
-      
-		var event = new Event(eventName,data);
-		event._data.aggreType = this.constructor.typeName;
-		event._data.aggreId  =  this.id;
-		this._eventBus.publish(event);
-	},	
-
-	__data:function(k,v){
-		if(arguments.length === 0){
-				return this._data;	
-		}else if(arguments.length === 1){
-				return this._data[k];	
-		}else if(arguments.length === 2 && k !== "id"){
-				this._data[k] = v;
-				this._publish("change",this.data(k));
-		}
-	},
-
-	remove:function(){
-		this.constructor._cache[this.id] = false;
-		this._publish("remove",this.id);
-	},
-	
-	get id(){
-		return this._data.id;
-	},
-
-	data:function(k){
-		var v = this._data[k];
-		if(typeof v  === "string"){
-			return v;
-		}else{
-			return Object.create(this._data);	
-		}
-	}
-
-}
-});
-require.register("jsdm/lib/CommandBus.js", function(exports, require, module){
-module.exports = CommandBus;
-
-function CommandBus(my){
+function Repository(NAME,db,publish){
     
-    this._my = my;
-
-	var handles = {};
-
-	this.bind = function(commandName,handle){
-		handles[commandName] = handle;
-	}
-
-	this.exec = function(commandName,args){
-		handles[commandName](args,this._my);
-	}
+    var cache = {};
+    
+    this.getData = function(id,callback){
+        var self = this;
+        this.get(id,function(err,aggre){
+            if(aggre){
+                callback(self._aggre2data(aggre));
+            }else{
+                callback();
+            }
+        })
+    }
+        
+    /* @public */
+    this.get = function(id,callback){
+        var self = this;
+        if(cache[id]){
+            callback(undefined,cache[id])
+        }else if(typeof cache[id] === 'boolean'){
+            callback();
+        }else{
+            db.get(NAME,id,function(err,data){
+                if(data){
+                    var aggobj = self._data2aggre(data);
+                    callback(undefined,aggobj);
+                }else{
+                    callback(err);
+                }
+            })
+        }
+    }
+    
+    /* @public */
+    this.create = function(data,callback){
+        var self = this;
+        this._create(data,function(err,aggobj){
+            if(err){
+                callback(err);
+            }else{
+                var data = self._aggre2data(aggobj);
+                data.id = uuid();
+                aggobj = self._data2aggre(data);
+                cache[data.id] = aggobj;
+                callback(undefined,aggobj);
+                publish(NAME+".*.create",data);
+                publish("*.*.create",data);
+            };
+        });
+    }
+    
+    /* @public */
+    this.remove = function(id){
+        cache[id] = false;
+        publish(NAME+"."+id+".remove",NAME,id);
+        publish(NAME+".*.remove",NAME,id);
+        publish("*.*.remove",NAME,id);
+    }
+    
 }
 
+module.exports = Repository;
 });
 require.register("jsdm/lib/Domain.js", function(exports, require, module){
+
 module.exports = Domain;
-var  CommandBus = require("./CommandBus"), 
-	   ServiceBus = require("./ServiceBus"),
-	   EventBus = require("./EventBus"),
-	   AggreProto = require("./AggreProto"),
-       inherit;
- 
- if(window){
-    inherit = require("inherit");
- }else{
-    inherit =  require("util").inherits;
- }
-	    
+
+var  Repository = require("./Repository"),
+     is = require("./_type"),
+     Emitter = window?require("emitter"):require("events").EventEmitter;
 
 function Domain(){
-    
+
+    var self = this,
+        emitter = new Emitter,
+        AggreClassList = [],
+        repositoryList = [],
+        commandHandleList = [],
+        serviceList = [],
+        db = null,
+        isSeal = false,
+        Aggres = {},
+        repos = {},
+        services = {},
+        commandHandles = {},
+        publish =  function(){
+            emitter.emit.apply(emitter,arguments);
+        }
+
     if(!(this instanceof Domain)){
        return new Domain();
     }
-
-	var AggreTypes  = this._AggreTypes = {};
-	this._db = null;
-    var my = {}
+        
+    function _push(cache,o){
+        if(is(o) === "array"){
+           o.forEach(function(obj){
+              cache.push(obj);
+           })
+        }else{
+              cache.push(o);
+        }                
+    }
     
-	var serviceBus = this._serviceBus = new ServiceBus(my);
+    function _register(type,o){
+        switch(type){
+            case "DB":
+                db = o;
+            break;
+            case "AggreClass":
+                _push(AggreClassList,o);
+            break;
+            case "repository":
+               _push(repositoryList,o)
+            break;
+            case "commandHandle":
+               _push(commandHandleList,o);
+            break;
+            case "service":
+               _push(serviceList,o);            
+            break;
+            case "listener":
+                if(is(o) === "array"){
+                   o.forEach(function(obj){
+                      emitter.on(obj.NAME,obj(repos,services));
+                   })
+                }else{
+                      emitter.on(o.NAME,o(repos,services));
+                }
+            break;
+            case "listenerOne":
+                if(is(o) === "array"){
+                   o.forEach(function(obj){
+                      emitter.once(obj.NAME,obj(repos,services));
+                   })
+                }else{
+                      emitter.once(o.NAME,o(repos,services));
+                }          
+            break;
+        }    
+    }
     
-	my.getAgg  = this._getAgg = function(name){
-		var T = AggreTypes[name];
-		return T;
-	}
+    this.register = function(){
     
-    my.service = this._service = function(serviceName,args){
-		serviceBus.exec(serviceName,args);
-	}
-    
-	this._eventBus = new EventBus(my);
-	this._commandBus = new CommandBus(my);
-	
-}
-
-Domain.prototype = {
-
-	bindService:function(service){
-		this._serviceBus.bind(service.name,service.service);
-		return this;
-	},
-	
-	bindAgg:function(Agg){
-        if(this._isSeal){
-            return this;
-        }
-        var self  =  this;
-    
-        var methods  =  Agg.proto;
-    
-		function T(data) {
-            if(arguments.length > 1){ 
-                throw new Error("argument must a json object. example  new Aggre({name:...  ,  age:...});"); 
-            } else{
-                data = {}
+        if(isSeal) return this;
+        
+        var self = this;
+        
+        var go = true,type = null;
+        
+        while(go){
+            var first = [].shift.call(arguments);
+            if(is(first) === "string"){
+                type = first;
+                var second = [].shift.call(arguments);
+                _register(first,second);
+            }else if(!first){
+                go = false;
+            }else{
+                _register(type,first);
             }
-			if (data.__in__) {
-				delete data.__in__;
-				AggreProto.call(this, data);
-			} else {
-				AggreProto.call(this, Agg.init(data));
-			}
-		}
-		
-		if(this._db){
-			T._db = this._db;
-		}
+        }
         
-		T.get = AggreProto.get;
-		T._cache = {}
-		T.typeName = Agg.name;
-		
-		inherit(T,AggreProto);
-		T.prototype._AggreTypes = this._AggreTypes;
-		T.prototype._serviceBus = this._serviceBus;
-		T.prototype._eventBus = this._eventBus;
-		
-		for (var k in methods) {
-            (function(key,m){    
-			T.prototype[key] = function(){
-                
-                if(arguments.length > 1){ 
-                    throw new Error("argument must a json object. example  agg.fun({name:...,age:...}) ;"); 
-                }
-                
-                var that = this;
-                
-                var my = {
-                    data:function(){
-                        return that.__data.apply(that,arguments);
-                    },
-                    publish:function(e,d){
-                        return that._publish.apply(that,arguments);
-                    },
-                    service:self._service,
-                    getAgg:self._getAgg
-                };
-
-                var args = [];
-                args.push(arguments[0]?arguments[0]:{});
-                args.push(my); 
-                return m.apply(this,args);      
-                }
-            })(k,methods[k]);
-            
-		}
-		
-		this._AggreTypes[Agg.name] = T;
-		return this;
+        return this;
+    }
+    
+    this.seal = function(){
+    
+        if(isSeal){
+            return this;
+        }else{
+            isSeal = true;
+        }
+        AggreClassList.forEach(function(wrap){
+            Aggres[wrap.NAME] = wrap(repos,services,publish);
+        })
         
-	},
-	bindCommandHandle:function(commandHandle){
-        if(this._isSeal){
-            return this;
-        }
-		this._commandBus.bind(commandHandle.name,commandHandle.commandHandle);
-		return this;
-	},
-	listen:function(){
-        if(this._isSeal){
-            return this;
-        }
-		this._eventBus.on.apply(this._eventBus,arguments)
-		return this;
-	},
-    listenOnce:function(){
-        if(this._isSeal){
-            return this;
-        }
-		this._eventBus.once.apply(this._eventBus,arguments)
-		return this;
-	},
-	bindDB:function(db){
-        if(this._isSeal){
-            return this;
-        }
-		this._db = db;
-		for(var k in this._AggreTypes){
-			this._AggreTypes[k]._db = db;
-		}
-		return this;
-	},
+        serviceList.forEach(function(wrap){
+            services[wrap.NAME] = wrap(repos,services);
+        })
+        
+        repositoryList.forEach(function(wrap){
+            var repository = new Repository(wrap.NAME,db,publish);
+            wrap(repository,Aggres[wrap.NAME]);
+            repos[wrap.NAME] = repository;
+        })
+        
+        commandHandleList.forEach(function(wrap){
+            commandHandles[wrap.NAME] = wrap(repos,services);
+        })
+        
+        return this;
+        
+    }
     
-    seal:function(){
-        this._isSeal = true;
-    },
+    this.exec = function(){
+        if(!isSeal) throw new Error("sorry! please domain.seal() ");
+        var commandName = [].shift.call(arguments);
+        var handle = commandHandles[commandName];
+        handle.apply(null,arguments);
+    }
     
-    _on:function(){
-		var isOn = [].shift.apply(arguments);
-		var cb = [].pop.apply(arguments);
-		function cb_(){
-         
-			cb.apply(null,[arguments[0]]);
-		}
-		[].push.call(arguments,cb_);
-		if(isOn){
-			this._eventBus.on.apply(this._eventBus,arguments);
-		}else{
-			this._eventBus.once.apply(this._eventBus,arguments);
-		}
-	},
-	once:function(){
-		[].unshift.call(arguments,false)
-		this._on.apply(this,arguments);
-	},
-	on:function(){
-		[].unshift.call(arguments,true)
-		this._on.apply(this,arguments);		
-    },
-	exec:function(commandName,args){
-		this._commandBus.exec(commandName,args);
-	}
+    this.on = function(){
+        emitter.on.apply(emitter,arguments);
+    }
+    
+    this.once = function(){
+        emitter.once.apply(emitter,arguments);
+    }
     
 }
+
+module.exports = Domain;
+
 });
-require.register("jsdm/lib/Event.js", function(exports, require, module){
-function Event(name,data){
+require.register("jsdm/lib/_type.js", function(exports, require, module){
 
-	this._data = {
-		name : name,
-		data : data,
-		aggreType : null,
-		aggreId : null,
-		time : new Date()
-	}
+/**
+ * toString ref.
+ */
 
-}
+var toString = Object.prototype.toString;
+/**
+ * Return the type of `val`.
+ *
+ * @param {Mixed} val
+ * @return {String}
+ * @api public
+ */
 
-var event = Event.prototype;
+module.exports = function(val){
+  switch (toString.call(val)) {
+    case '[object Function]': return 'function';
+    case '[object Date]': return 'date';
+    case '[object RegExp]': return 'regexp';
+    case '[object Arguments]': return 'arguments';
+    case '[object Array]': return 'array';
+    case '[object String]': return 'string';
+  }
 
-event.__defineGetter__('aggreType',function(){return this._data.aggreType;});
-event.__defineGetter__('aggreId',function(){return this._data.aggreId;});
-event.__defineGetter__('time',function(){return this._data.time;});
-event.__defineGetter__('name',function(){return this._data.name;});
-event.__defineGetter__('data',function(){return this._data.data;});
+  if (val === null) return 'null';
+  if (val === undefined) return 'undefined';
+  if (val && val.nodeType === 1) return 'element';
+  if (val === Object(val)) return 'object';
 
-module.exports = Event;
-});
-require.register("jsdm/lib/EventBus.js", function(exports, require, module){
-
-module.exports = EventBus;
-var EventEmitter;
-
-if(window){
-EventEmitter = require("emitter");
-}else{
-EventEmitter = require("events").EventEmitter;
-}
-
-
-function EventBus(my){
-	this._emitter =  new EventEmitter();
-	this._my  =  my;
-}
-
-EventBus.prototype = {
-
-	_on:function(aggreType,aggreId,eventName,handle){
-        
-		var isOn = [].shift.apply(arguments);
-		if(arguments.length == 4){
-			aggreType = aggreType + aggreId + eventName ;
-		}else if(arguments.length == 3){
-			aggreType = aggreType + aggreId;
-			handle = eventName;
-		}else{
-			handle = aggreId;
-		}
-        
-		if(isOn){
-			this._emitter.on(aggreType,handle);
-		}else{
-			this._emitter.once(aggreType,handle);
-		}
-		
-	},
-
-	once:function(){
-		[].unshift.call(arguments,false);
-		this._on.apply(this,arguments);
-	},
-	
-	on:function(){
-		[].unshift.call(arguments,true);
-		this._on.apply(this,arguments);
-	},
-	
-	publish : function(event){
-		this._emitter.emit('newEvent',event);
-		if(!event.aggreType){
-			this._emitter.emit(event.name,event,this._my);	
-		}else{
-			this._emitter.emit(event.aggreType+event.aggreId+event.name,event,this._my);	
-			this._emitter.emit(event.aggreType+event.name,event,this._my);
-			this._emitter.emit(event.aggreType,event,this._my);
-			this._emitter.emit(event.name,event,this._my);
-            
-		}
-	}
-}
-});
-require.register("jsdm/lib/ServiceBus.js", function(exports, require, module){
-module.exports = ServiceBus;
-
-function ServiceBus(my){
-
-    this._my = my;
-
-	var services = {};
-	
-	this.bind = function(serviceName,service){
-		services[serviceName] = service;	
-	}
-
-	this.exec = function(serviceName,args){
-		services[serviceName](args,this._my);
-   	}
-
-}
-
+  return typeof val;
+};
 });
 require.alias("gjohnson-uuid/index.js", "jsdm/deps/uuid/index.js");
 
 require.alias("component-emitter/index.js", "jsdm/deps/emitter/index.js");
-
-require.alias("component-inherit/index.js", "jsdm/deps/inherit/index.js");
 

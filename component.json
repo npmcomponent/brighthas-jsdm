@@ -2,7 +2,7 @@
   "name": "jsdm",
   "repo": "brighthas/jsdm",
   "description": "Domain development , DDD-CQRS framework for node.js and  browser",
-  "version": "0.0.1",
+  "version": "0.1.2",
   "keywords": [
     "CQRS",
     "DDD",
@@ -10,19 +10,14 @@
   ],
   "dependencies": {
     "gjohnson/uuid": "*",
-    "component/emitter": "*",
-    "component/inherit": "*",
-    "component/jquery": "*"
+    "component/emitter": "*"
   },
   "development": {},
   "scripts": [
     "index.js",
-    "lib/AggreProto.js",
-    "lib/CommandBus.js",
+    "lib/Repository.js",
     "lib/Domain.js",
-    "lib/Event.js",
-    "lib/EventBus.js",
-    "lib/ServiceBus.js"
+    "lib/_type.js"
   ],
   "license": "MIT"
 }
