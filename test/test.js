@@ -22,17 +22,20 @@ describe("Domain",function(){
                 },
                 changeName:function(name){
                     this._name = name;
-                    publish("user."+this.id+".changeName",name);
+                    publish("user."+this.id+".changeName",this.id,name);
                     publish("user.*.changeName",this.id,name);
                 }
             }
-            
+            User.className = "User";
             return User;
         }
-        user_wrap.NAME = "user";
+        
         
         // define aggre repository
-        function user_repo_wrap(repository,User){
+        function user_repo_wrap(Repository,Aggres){
+        
+            var User = Aggres.User;
+            var repository = new Repository("User");
         
             repository._create = function(data,callback){
                 var user = new User(data.name);
@@ -53,8 +56,10 @@ describe("Domain",function(){
                 return data;
             }
             
+            return repository;
+            
         }
-        user_repo_wrap.NAME = "user";
+        
         
         // define command handle 1
         function ch_wrap1(repos,services){
@@ -65,40 +70,53 @@ describe("Domain",function(){
                     callback();
                 })
             }
+            handle.commandName = "change user name";
             return handle;
         }
-        ch_wrap1.NAME = "change user name";
         
         // define command handle 2
         function ch_wrap2(repos,services){
             function handle(args,callback){
-                var repo = repos.user;
+                var repo = repos.User;
                 repo.create({name:args.name},callback)
             }
+            handle.commandName = "create a user";
             return handle;
         }
-        ch_wrap2.NAME = "create a user";
         
         // define a listener
         function lis_wrap(repos,services){
-            return function(data){
-                repos.user.getData(data.id,function(d){
+            
+            function handle(id,data){
+                repos.User.getData(data.id,function(d){
                    console.log( services.testservice(2,3,6) );
                 });
             }
+            
+            handle.eventName = "User.*.create";
+            
+            function handle2(id,data){
+                console.log(data)
+            }
+            
+            handle2.eventName = "user.*.changeName";
+            
+            return [handle,handle2];
         }
-        lis_wrap.NAME = "user.*.create";
         
         // define a service
         function ser_wrap(repos,services){
         
-            return function(a,b,c){
+            function service(a,b,c){
                
                 return a+b+c;
             }
             
+            service.serviceName = "testservice";
+            
+            return service;
+            
         }
-        ser_wrap.NAME = "testservice"
         
         domain.register(
                 "AggreClass",user_wrap,
@@ -110,8 +128,10 @@ describe("Domain",function(){
         
     })
     it("#register",function(){
-        domain.exec("create a user",{name:"leo"},function(err,user){
-            console.log("good")
+    
+        domain.exec("create a user",{name:"leo"},function(err,data){
+            domain.call("User.changeName",data.id,["brighthas"])
         })
+        
     })
 })

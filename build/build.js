@@ -397,9 +397,10 @@ if(typeof window !== "undefined"){
     uuid = require("node-uuid").v1;
 }
 
-function Repository(NAME,db,publish){
+function Repository(className){
     
     var cache = {};
+    this.className = className;
     
     this.getData = function(id,callback){
         var self = this;
@@ -420,7 +421,7 @@ function Repository(NAME,db,publish){
         }else if(typeof cache[id] === 'boolean'){
             callback();
         }else{
-            db.get(NAME,id,function(err,data){
+            self._db.get(this.className,id,function(err,data){
                 if(data){
                     var aggobj = self._data2aggre(data);
                     callback(undefined,aggobj);
@@ -443,8 +444,8 @@ function Repository(NAME,db,publish){
                 aggobj = self._data2aggre(data);
                 cache[data.id] = aggobj;
                 callback(undefined,aggobj);
-                publish(NAME+".*.create",data);
-                publish("*.*.create",data);
+                self._publish(className+".*.create",className,data);
+                self._publish("*.*.create",className,data);
             };
         });
     }
@@ -452,9 +453,9 @@ function Repository(NAME,db,publish){
     /* @public */
     this.remove = function(id){
         cache[id] = false;
-        publish(NAME+"."+id+".remove",NAME,id);
-        publish(NAME+".*.remove",NAME,id);
-        publish("*.*.remove",NAME,id);
+        this._publish(this.className+"."+id+".remove",className,id);
+        this._publish(this.className+".*.remove",className,id);
+        this._publish("*.*.remove",className,id);
     }
     
 }
@@ -466,9 +467,15 @@ require.register("jsdm/lib/Domain.js", function(exports, require, module){
 module.exports = Domain;
 
 var  Repository = require("./Repository"),
-     is = require("./_type"),
-     Emitter = window?require("emitter"):require("events").EventEmitter;
+     is = require("./_type");
+     
 
+     if(typeof window !== 'undefined'){
+        Emitter = require("emitter")
+     }else{
+        Emitter = require("events").EventEmitter;
+     }
+     
 function Domain(){
 
     var self = this,
@@ -481,6 +488,7 @@ function Domain(){
         isSeal = false,
         Aggres = {},
         repos = {},
+        openMethods = {},
         services = {},
         commandHandles = {},
         publish =  function(){
@@ -504,10 +512,10 @@ function Domain(){
     function _register(type,o){
         switch(type){
             case "DB":
-                db = o;
+               db = o;
             break;
             case "AggreClass":
-                _push(AggreClassList,o);
+               _push(AggreClassList,o);
             break;
             case "repository":
                _push(repositoryList,o)
@@ -521,20 +529,48 @@ function Domain(){
             case "listener":
                 if(is(o) === "array"){
                    o.forEach(function(obj){
-                      emitter.on(obj.NAME,obj(repos,services));
+                      var handles = obj(repos,services);
+                      if(is(o) === "array"){
+                        handle.forEach(function(handle){
+                            emitter.on(handle.eventName,handle);
+                        })
+                      }else{
+                        emitter.on(handles.eventName,handles);
+                      }
                    })
                 }else{
-                      emitter.on(o.NAME,o(repos,services));
+                      var handles = o(repos,services);
+                      if(is(handles) === "array"){
+                        handles.forEach(function(handle){
+                            emitter.on(handle.eventName,handle);
+                        })
+                      }else{
+                        emitter.on(handles.eventName,handles);
+                      }
                 }
             break;
             case "listenerOne":
                 if(is(o) === "array"){
                    o.forEach(function(obj){
-                      emitter.once(obj.NAME,obj(repos,services));
+                      var handles = obj(repos,services);
+                      if(is(o) === "array"){
+                        handle.forEach(function(handle){
+                            emitter.once(handle.eventName,handle);
+                        })
+                      }else{
+                        emitter.once(handles.eventName,handles);
+                      }
                    })
                 }else{
-                      emitter.once(o.NAME,o(repos,services));
-                }          
+                      var handles = o(repos,services);
+                      if(is(handles) === "array"){
+                        handles.forEach(function(handle){
+                            emitter.once(handle.eventName,handle);
+                        })
+                      }else{
+                        emitter.once(handles.eventName,handles);
+                      }
+                }
             break;
         }    
     }
@@ -571,32 +607,94 @@ function Domain(){
             isSeal = true;
         }
         AggreClassList.forEach(function(wrap){
-            Aggres[wrap.NAME] = wrap(repos,services,publish);
+            var o = wrap(repos,services,publish);
+            if(is(o) === "array"){
+                o.forEach(function(a){
+                  Aggres[a.className] = a;
+                })
+            }else{
+                Aggres[o.className] = o;
+            }            
         })
         
         serviceList.forEach(function(wrap){
-            services[wrap.NAME] = wrap(repos,services);
+            var o = wrap(repos,services);
+            if(is(o) === "array"){
+                o.forEach(function(a){
+                  services[a.serviceName] = a;
+                })
+            }else{
+                services[o.serviceName] = o;
+            }   
         })
         
+        Repository.prototype._db = db;
+        Repository.prototype._publish = publish;
+        
         repositoryList.forEach(function(wrap){
-            var repository = new Repository(wrap.NAME,db,publish);
-            wrap(repository,Aggres[wrap.NAME]);
-            repos[wrap.NAME] = repository;
+            var o = wrap(Repository,Aggres);
+            if(is(o) === "array"){
+                o.forEach(function(a){
+                  repos[a.className] = a;
+                })
+            }else{
+                repos[o.className] = o;
+            }
         })
         
         commandHandleList.forEach(function(wrap){
-            commandHandles[wrap.NAME] = wrap(repos,services);
+            var o = wrap(repos,services);
+            if(is(o) === "array"){
+                o.forEach(function(a){
+                  commandHandles[a.commandName] = a;
+                })
+            }else{
+                commandHandles[o.commandName] = o;
+            }
         })
         
         return this;
         
     }
     
-    this.exec = function(){
-        if(!isSeal) throw new Error("sorry! please domain.seal() ");
-        var commandName = [].shift.call(arguments);
+    
+    this.exec = function(commandName,args,callback){
         var handle = commandHandles[commandName];
-        handle.apply(null,arguments);
+        handle(args,callback);
+    }
+    
+    this.openMethod = function(){
+        for(var i=0;i<arguments.length;i++){
+            openMethods[arguments[i]] = true;
+        }
+    }
+    
+    this.call = function(methodName,id,args,callback){
+    
+        if(!openMethods[methodName]){
+            callback(new Error("the method no publish."));
+        }else{
+            var cm = methodName.split("."),
+            className = cm[0],methodName = cm[1],
+            args = JSON.parse(JSON.stringify(args? args:[])),
+            callback = callback?callback:function(){};
+                        
+            var repo = repos[className];
+            repo.get(id,function(err,a){
+                if(a){
+                  var method = a[methodName];
+                  var rs;
+                  try{
+                    rs = method.apply(a,args);
+                    callback(rs);
+                  }catch(e){
+                    callback(e);
+                  }                  
+                }else{
+                  callback();
+                }
+            })  
+        }
     }
     
     this.on = function(){
