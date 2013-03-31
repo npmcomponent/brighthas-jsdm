@@ -53,11 +53,11 @@ step 1. define Aggre
                     publish("user.*.changeName",this.id,name);
                 }
             }
-            
+            User.className = "User";
             return User;
-        }
+    }
         
-        wrap.NAME = "user";
+        
         
 ```    
 
@@ -70,8 +70,11 @@ step 2. define user repository
     moduel.exports = wrap
     
         // define aggre repository
-        function wrap(repository,User){
+        function wrap(Repository,Aggres){
         
+            var repository = new Repository("User");
+            var User = Aggres.User;
+            
             // repository is Repository instance , must implement _create/_data2aggre/_aggre2data
             repository._create = function(data,callback){
                 var user = new User(data.name);
@@ -92,8 +95,9 @@ step 2. define user repository
                 return data;
             }
             
+            return repository;
+            
         }
-        wrap.NAME = "user";  // and user aggre wrap same.
         
 ```
 step 3. define command handle   
@@ -103,29 +107,30 @@ step 3. define command handle
     
     // handle.js
     
-        // define command handle 1
-        function wrap1(repos,services){
-            function handle(args,callback){
+        function wrap(repos,services){
+        
+            // define command handle 1
+            function handle1(args,callback){
                 var repo = repos.user;
                 repo.get(args.id,function(err,user){
                     user.changeName(args.name);
                     callback();
                 })
             }
-            return handle;
-        }
-        wrap1.NAME = "change user name";
+            handle1.commandName = "change user name";        
         
-        // define command handle 2
-        function wrap2(repos,services){
-            function handle(args,callback){
+            // define command handle 2
+            function handle2(args,callback){
                 var repo = repos.user;
                 repo.create({name:args.name},callback)
             }
-            return handle;
+            handle2.commandName = "create a user"; 
+            
+            return [handle1,handle2];
+           
         }
-        wrap2.NAME = "create a user";        
-        module.exports = [wrap1,wrap2];
+        
+        module.exports = wrap;
 
 ```
     
@@ -141,7 +146,7 @@ step 4.  register and run
        
    domain.register("AggreClass",UserClass)
          .register("repository",user_repo)
-         .register("commandHandle",handles[0],handles[1])
+         .register("commandHandle",handles)
          .seal();
 
    domain.exec("create a user",{name:"bright.has"},function(){
@@ -154,7 +159,7 @@ domain.register
 ```javascript
    domain.register("AggreClass",UserClass)
          .register("repository",user_repo)
-         .register("commandHandle",handles[0],handles[1])
+         .register("commandHandle",handles)
          .seal();
 ```
 or
