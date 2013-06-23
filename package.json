@@ -1,6 +1,6 @@
 {
   "name": "jsdm",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Domain development , DDD-CRS framework for node.js .",
   "main": "index",
   "scripts": {
@@ -29,5 +29,8 @@
     "domain",
     "ioc",
     "di"
-  ]
+  ],
+  "bugs": {
+    "url": "https://github.com/brighthas/crs/issues"
+  }
 }
