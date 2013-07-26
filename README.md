@@ -37,7 +37,7 @@ step 1. define Aggre
     
     module.exports = wrap;
     
-    function wrap(repos,services,publish){
+    function wrap(my){
         
             function User(name){
                 this._name = name;
@@ -49,8 +49,8 @@ step 1. define Aggre
                 },
                 changeName:function(name){
                     this._name = name;
-                    publish("user."+this.id+".changeName",name);
-                    publish("user.*.changeName",this.id,name);
+                    my.publish("user."+this.id+".changeName",name);
+                    my.publish("user.*.changeName",this.id,name);
                 }
             }
             User.className = "User";
@@ -70,7 +70,7 @@ step 2. define user repository
     moduel.exports = wrap
     
         // define aggre repository
-        function wrap(Repository,Aggres){
+        function wrap(my){
         
             var repository = new Repository("User");
             var User = Aggres.User;
@@ -107,11 +107,11 @@ step 3. define command handle
     
     // handle.js
     
-        function wrap(repos,services){
+        function wrap(my){
         
             // define command handle 1
             function handle1(args,callback){
-                var repo = repos.user;
+                var repo = my.repos.user;
                 repo.get(args.id,function(err,user){
                     user.changeName(args.name);
                     callback();
@@ -121,7 +121,7 @@ step 3. define command handle
         
             // define command handle 2
             function handle2(args,callback){
-                var repo = repos.user;
+                var repo = my.repos.user;
                 repo.create({name:args.name},callback)
             }
             handle2.commandName = "create a user"; 
