@@ -8,8 +8,7 @@
   },
   "dependencies": {
     "node-uuid": ">=0.0.1",
-    "should": ">=0.0.1",
-    "commander": ">=0.0.1"
+    "strict-method":"*"
   },
   "repository": {
     "type": "git",
@@ -20,7 +19,9 @@
   "directories": {
     "test": "test"
   },
-  "devDependencies": {},
+  "devDependencies": {
+      "should": ">=0.0.1"
+  },
   "keywords": [
     "cqrs",
     "ddd",
