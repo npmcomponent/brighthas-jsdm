@@ -10,7 +10,7 @@ describe("Domain",function(){
     it("#register",function(){
     
         // define aggre class
-        function user_wrap(repos,services,publish){
+        function user_wrap(my){
         
             function User(name){
                 this._name = name;
@@ -22,8 +22,8 @@ describe("Domain",function(){
                 },
                 changeName:function(name){
                     this._name = name;
-                    publish("user."+this.id+".changeName",this.id,name);
-                    publish("user.*.changeName",this.id,name);
+                    my.publish("user."+this.id+".changeName",this.id,name);
+                    my.publish("user.*.changeName",this.id,name);
                 }
             }
             User.className = "User";
@@ -32,10 +32,10 @@ describe("Domain",function(){
         
         
         // define aggre repository
-        function user_repo_wrap(Repository,Aggres){
+        function user_repo_wrap(my){
         
-            var User = Aggres.User;
-            var repository = new Repository("User");
+            var User = my.Aggres.User;
+            var repository = new my.Repository("User");
         
             repository._create = function(data,callback){
                 var user = new User(data.name);
@@ -62,9 +62,9 @@ describe("Domain",function(){
         
         
         // define command handle 1
-        function ch_wrap1(repos,services){
+        function ch_wrap1(my){
             function handle(args,callback){
-                var repo = repos.user;
+                var repo = my.repos.user;
                 repo.get(args.id,function(err,user){
                     user.changeName(args.name);
                     callback();
@@ -75,21 +75,21 @@ describe("Domain",function(){
         }
         
         // define command handle 2
-        function ch_wrap2(repos,services){
+        function ch_wrap2(my){
             function handle(args,callback){
-                var repo = repos.User;
-                repo.create({name:args.name},callback)
+                var repo = my.repos.User;
+                repo.create(args,callback)
             }
             handle.commandName = "create a user";
             return handle;
         }
         
         // define a listener
-        function lis_wrap(repos,services){
+        function lis_wrap(my){
             
             function handle(id,data){
-                repos.User.getData(data.id,function(d){
-                   console.log( services.testservice(2,3,6) );
+                my.repos.User.getData(data.id,function(d){
+                   console.log(my.services.testservice(2,3,6));
                 });
             }
             
@@ -105,7 +105,7 @@ describe("Domain",function(){
         }
         
         // define a service
-        function ser_wrap(repos,services){
+        function ser_wrap(my){
         
             function service(a,b,c){
                
@@ -127,9 +127,9 @@ describe("Domain",function(){
               .seal();
         
     })
-    it("#register",function(){
-    
+    it("#test",function(){
         domain.exec("create a user",{name:"leo"},function(err,data){
+            console.log(err)
             domain.call("User.changeName",data.id,["brighthas"])
         })
         

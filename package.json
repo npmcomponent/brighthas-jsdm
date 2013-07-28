@@ -1,6 +1,6 @@
 {
   "name": "jsdm",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Domain development , DDD-CRS framework for node.js .",
   "main": "index",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "node-uuid": ">=0.0.1",
-    "strict-method":"*"
+    "strict-method": "*"
   },
   "repository": {
     "type": "git",
@@ -20,7 +20,7 @@
     "test": "test"
   },
   "devDependencies": {
-      "should": ">=0.0.1"
+    "should": ">=0.0.1"
   },
   "keywords": [
     "cqrs",
