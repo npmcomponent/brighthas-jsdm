@@ -7,12 +7,11 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "node-uuid": ">=0.0.1",
-    "strict-method": "*"
+    "node-uuid": ">=0.0.1"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/brighthas/crs.git"
+    "url": "https://github.com/brighthas/jsdm.git"
   },
   "author": "brighthas",
   "license": "MIT",
@@ -30,6 +29,6 @@
     "di"
   ],
   "bugs": {
-    "url": "https://github.com/brighthas/crs/issues"
+    "url": "https://github.com/brighthas/jsdm/issues"
   }
 }
