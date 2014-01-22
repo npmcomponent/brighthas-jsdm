@@ -124,13 +124,16 @@ describe("Domain",function(){
                 "commandHandle",[ch_wrap2,ch_wrap1],
                 "listener",lis_wrap,
                 "service",ser_wrap)
+				.openMethod("User.changeName")
               .seal();
         
     })
     it("#test",function(){
         domain.exec("create a user",{name:"leo"},function(err,data){
             console.log(err)
-            domain.call("User.changeName",data.id,["brighthas"])
+            domain.call("User.changeName",data.id,["brighthas"],function(){
+            	console.log(arguments)
+            })
         })
         
     })
