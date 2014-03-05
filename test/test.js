@@ -115,11 +115,13 @@ function info_repo_wrap(my) {
 
 function ch_wrap1(my) {
     function handle(args, callback) {
-        var repo = my.repos.user;
-        repo.get(args.id, function(err, user) {
+        var repo = my.repos.User;
+        var rs = repo.get(args.id);
+		rs.then(function(user){
+			console.log(user)
             user.changeName(args.name);
             callback();
-        })
+		})
     }
     handle.commandName = "change user name";
     return handle;
@@ -201,10 +203,20 @@ domain2.on("*.*.create",function(){
 })
 
 
+
 Domain.share({
 	d1:domain,
 	d2:domain2
-},[user_wrap],[user_repo_wrap]);
+},
+[user_wrap],
+[user_repo_wrap]);
+
+// Domain.share({
+// 	domain1:domain1,
+// 	domain2:domain2
+// },
+// [User],
+// [userRepository]);
 
 
 
@@ -229,3 +241,4 @@ domain.exec("create a info", {
     })
 })
 
+domain.exec("change user name",{name:"hahahaha",id:"001"})
