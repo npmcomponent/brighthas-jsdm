@@ -215,7 +215,13 @@ domain2.on("domain1 *.*.create",function(){
 })
 
 
-
+domain.addExecAction("create a user",function(args,next){
+    console.log(args,"------");
+    next(" hahahah  hahah  haha");
+}).addExecAction("create a user",function(args,next,data){
+        console.log(data,"====");
+        next();
+    })
 
 domain.exec("create a user", {
     name: "leo",
