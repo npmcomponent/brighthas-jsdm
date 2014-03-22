@@ -40,7 +40,7 @@ function info_wrap(my) {
         },
         changeBody: function(body) {
 			my.repos.User.get("001",function(err,user){
-				console.log(",,,,,,",user);
+		//		console.log(",,,,,,",user);
 			})
             this._body = body;
             my.publish("info." + this.id + ".changeBody", this.id, body);
@@ -118,7 +118,7 @@ function ch_wrap1(my) {
         var repo = my.repos.User;
         var rs = repo.get(args.id);
 		rs.then(function(user){
-			console.log(user)
+		//	console.log(user)
             user.changeName(args.name);
             callback();
 		})
@@ -186,8 +186,8 @@ function ser_wrap(my) {
 }
 
 domain.register(
-    "AggreClass", info_wrap,
-    "repository", info_repo_wrap,
+    "AggreClass", info_wrap,user_wrap,
+    "repository", info_repo_wrap,user_repo_wrap,
     "commandHandle", [ch_wrap2, ch_wrap1,ch_wrap3],
     "listener", lis_wrap,
     "service", ser_wrap)
@@ -196,27 +196,23 @@ domain.register(
 
 
 var domain2 = new Domain();
-domain2.seal();
+domain2.register("domain",{domain1:domain},
+    "listener",function(wrap,ds){
+        function ms(){
+            console.log(ds.domain1.on)
+            console.log(ds.domain1.once)
+            console.log(ds.domain1.removeListener)
+            console.log(ds.domain1.services.testservice(3,2,3,2))
 
-domain2.on("*.*.create",function(){
-	//console.log("success !!")
+        }
+        ms.eventName = "domain1 user.*.changeName";
+        return ms;
+    }
+).seal();
+
+domain2.on("domain1 *.*.create",function(){
+	// console.log("success !--------!")
 })
-
-
-
-Domain.share({
-	d1:domain,
-	d2:domain2
-},
-[user_wrap],
-[user_repo_wrap]);
-
-// Domain.share({
-// 	domain1:domain1,
-// 	domain2:domain2
-// },
-// [User],
-// [userRepository]);
 
 
 
@@ -237,7 +233,7 @@ domain.exec("create a info", {
 }, function(err, data) {
 	//console.log(arguments)
     domain.call("Info.changeBody", data.id, ["brighthas"], function() {
-        console.log(arguments)
+      //  console.log(arguments)
     })
 })
 
