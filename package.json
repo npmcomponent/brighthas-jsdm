@@ -1,36 +1,15 @@
 {
-  "name": "jsdm",
-  "version": "0.4.6",
-  "description": "Domain development , DDD-CRS framework for node.js .",
-  "main": "index",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "dependencies": {
-    "node-uuid": ">=0.0.1",
-    "q": "~1.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/brighthas/jsdm.git"
-  },
-  "author": "brighthas",
-  "license": "MIT",
-  "directories": {
-    "test": "test"
-  },
-  "devDependencies": {
-    "should": ">=0.0.1"
-  },
+  "name": "brighthas-jsdm",
+  "description": "Domain development , DDD-CQRS framework for node.js and  browser",
+  "version": "0.1.2",
   "keywords": [
-    "cqrs",
-    "ddd",
-    "domain",
-    "ioc",
-    "di"
+    "CQRS",
+    "DDD",
+    "Domain"
   ],
-  "bugs": {
-    "url": "https://github.com/brighthas/jsdm/issues"
+  "dependencies": {
+    "gjohnson-uuid": "git://github.com/npmcomponent/gjohnson-uuid.git",
+    "component-emitter": "git://github.com/npmcomponent/component-emitter.git"
   },
-  "homepage": "https://github.com/brighthas/jsdm"
+  "license": "MIT"
 }
